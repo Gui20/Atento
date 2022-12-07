@@ -1,0 +1,572 @@
+{
+	"name": "Questoes",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "questoes",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"runAsWorkspaceSystemIdentity": false,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "73641afb-f94e-49d9-a264-e1a5ab94baff"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"synapse_widget": {
+				"version": "0.1"
+			},
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "Synapse PySpark"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/c0532d08-eeaa-491a-aec3-1e183a9b71b1/resourceGroups/GuiAzure/providers/Microsoft.Synapse/workspaces/gui-atento/bigDataPools/questoes",
+				"name": "questoes",
+				"type": "Spark",
+				"endpoint": "https://gui-atento.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/questoes",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net",
+					"authHeader": null
+				},
+				"sparkVersion": "3.2",
+				"nodeCount": 3,
+				"cores": 4,
+				"memory": 28,
+				"extraHeader": null
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"Lendo o dataset que salvei no processo de ETL."
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"dataset = spark.read.csv('abfss://disco1@storageguidatalake.dfs.core.windows.net/data/dataset.csv/part-000??-9ce8ba6f-bacf-430e-b08c-f1be4607864f-c000.csv', sep=',',header=True)\n",
+					""
+				],
+				"execution_count": 1
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"## Questão 1"
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"from pyspark.sql import functions as f"
+				],
+				"execution_count": 2
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"Pra responder essa pergunta fiz a seleção das colunas onde tem a contagem de passageiros e a distância da viagem e agrupei a informação pra realizar a média da distância com esses parâmetros."
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"dataset\\\n",
+					"  .select('passenger_count', 'trip_distance')\\\n",
+					"  .where('passenger_count<=2')\\\n",
+					"  .groupBy('passenger_count')\\\n",
+					"  .agg(\n",
+					"       f.mean('trip_distance').alias('Distância Média')\n",
+					"  )\\\n",
+					"  .show(truncate=False)"
+				],
+				"execution_count": 3
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"## Questão 2"
+				]
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"Mais um agrupamento pelos fornecedores do serviço, podendo analisar quais deles mais arrecadam."
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"dataset\\\n",
+					"  .groupBy('name')\\\n",
+					"  .agg(\n",
+					"       f.sum('total_amount').alias('Total Arrecadado')\n",
+					"  )\\\n",
+					"  .orderBy('Total Arrecadado', ascending=False)\\\n",
+					"  .limit(3)\\\n",
+					"  .show(truncate=False)"
+				],
+				"execution_count": 4
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"## Questão 3"
+				]
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"Filtrando o dataframe pra analisar a frequência por mês no qual o pagamento é o dinheiro."
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"df_3 = dataset\\\n",
+					"  .select('Data', f.month('Data').alias('Mes'))\\\n",
+					"  .where(\"payment_type=='Cash'\")\n",
+					"\n",
+					"df_3.show()"
+				],
+				"execution_count": 5
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"import matplotlib.pyplot as plt"
+				],
+				"execution_count": 6
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"df = df_3.toPandas()"
+				],
+				"execution_count": 7
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"Utilizando o matplotlib podemos obter esse histograma abaixo com certa facilidade. "
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"plt.figure(figsize=[15,8])\n",
+					"plt.hist(df['Mes'], rwidth=0.8,color='green', bins=12) \n",
+					"plt.ylabel('Frequência')\n",
+					"plt.xlabel('Mês')\n",
+					"plt.title('Histograma Distribuição Mensal')\n",
+					"plt.show() "
+				],
+				"execution_count": 8
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"## Questão 4"
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"q_4 = dataset\\\n",
+					"        .select('tip_amount', 'Data', f.year('Data').alias('Ano'), f.month('Data').alias('Mes'))\\\n",
+					"        .where('Ano==2012')\\\n",
+					"        .where('Mes > 9')\\\n",
+					"        .groupBy('Data')\\\n",
+					"        .agg(\n",
+					"            f.count('tip_amount').alias('Quantidade das Gorjetas')\n",
+					"        )\\\n",
+					"        .orderBy('Data', ascending=True)"
+				],
+				"execution_count": 9
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"q_4 = q_4.toPandas()"
+				],
+				"execution_count": 10
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"import plotly.graph_objects as go"
+				],
+				"execution_count": 11
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"fig = go.Figure()\n",
+					"fig.add_trace(go.Scatter(x=q_4['Data'], y=q_4['Quantidade das Gorjetas'],\n",
+					"                    mode='lines',\n",
+					"                    name='lines'))\n",
+					"\n",
+					"fig.update_layout(\n",
+					"    title=\"Quantidade de Gorjetas por dia\",\n",
+					"    xaxis_title=\"Data\",\n",
+					"    yaxis_title=\"Contagem diária das Gorjetas\")\n",
+					"fig.show()"
+				],
+				"execution_count": 12
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"## Questão 5"
+				]
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"Para montar um DataWareHouse para o departamento de RH de um Contact Center precisamos saber quais os melhores KPI's para serem analisados.\n",
+					"\n",
+					"Primeiro Passo temos que nos perguntar:\n",
+					"\n",
+					"- O que queremos Analisar?\n",
+					"- Como queremos Analisar?\n",
+					"\n",
+					""
+				]
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"Depois de Analisar um pouco selecionei alguns parâmetros que poderiam ser importantes pensando no departamento de RH de um Contact Center.\n",
+					""
+				]
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"![image-alt-text](https://storageguidatalake.blob.core.windows.net/images/Dimensao_Indicador)"
+				]
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"Então subi um banco de dados SQL Sever na nuvem da Azure...."
+				]
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"![image-alt-text](https://storageguidatalake.blob.core.windows.net/images/SQl_Server_Cloud.png)"
+				]
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"Então eu criei todos os relacionamentos entre as dimensões sendo utilizado como atributo uma dimensão auxiliar dos KPI's..."
+				]
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"![image-alt-text](https://storageguidatalake.blob.core.windows.net/images/Tables_Relations.png)"
+				]
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"E o resultado final do DataWareHouse"
+				]
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"![image-alt-text](https://storageguidatalake.blob.core.windows.net/images/diagrama.png)"
+				]
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"Os próximos passos seriam construção de um cubo OLAP para consultas otimizadas!"
+				]
+			}
+		]
+	}
+}

@@ -1,0 +1,331 @@
+{
+	"name": "Streaming",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "guispark",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"runAsWorkspaceSystemIdentity": false,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "79d15cb2-1e50-45ff-a90e-4a0ad6af605f"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"synapse_widget": {
+				"version": "0.1"
+			},
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "Synapse PySpark"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/c0532d08-eeaa-491a-aec3-1e183a9b71b1/resourceGroups/GuiAzure/providers/Microsoft.Synapse/workspaces/gui-atento/bigDataPools/guispark",
+				"name": "guispark",
+				"type": "Spark",
+				"endpoint": "https://gui-atento.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/guispark",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net",
+					"authHeader": null
+				},
+				"sparkVersion": "3.2",
+				"nodeCount": 3,
+				"cores": 4,
+				"memory": 28,
+				"extraHeader": null
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"A ideia inicial é puxar os dados que foram tratados anteriormente"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"dataset = spark.read.csv('abfss://disco1@storageguidatalake.dfs.core.windows.net/data/dataset.csv/part-000??-9ce8ba6f-bacf-430e-b08c-f1be4607864f-c000.csv', sep=',',header=True)\n",
+					""
+				],
+				"execution_count": 2
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"E então, fazer uma repartição um pouco maior neste caso de 100. Estou dividindo o csv original em 100 partes."
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"dataset\\\n",
+					"  .repartition(100)\\\n",
+					"  .write\\\n",
+					"  .option(\"header\", 'true')\\\n",
+					"  .mode('overwrite')\\\n",
+					"  .csv(\"abfss://disco1@storageguidatalake.dfs.core.windows.net/Streaming/dataset.csv\")"
+				],
+				"execution_count": 3
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"Agora vou pegar uma parte e definir uma estrutura para o streaming"
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"part = spark.read.csv(\n",
+					"    'abfss://disco1@storageguidatalake.dfs.core.windows.net/Streaming/dataset.csv/part-00000-bd2f9786-437f-4b3f-983d-3ce8389e19d6-c000.csv',\n",
+					"    header=True,\n",
+					"    inferSchema=True\n",
+					")"
+				],
+				"execution_count": 4
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"dataSchema = part.schema"
+				],
+				"execution_count": 5
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"streaming = (\n",
+					"    spark.readStream.schema(dataSchema)\\\n",
+					"    .option('maxFilesPerTrigger', 1)\\\n",
+					"    .csv('abfss://disco1@storageguidatalake.dfs.core.windows.net/Streaming/dataset.csv/')\n",
+					")"
+				],
+				"execution_count": 6
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"from pyspark.sql import functions as f"
+				],
+				"execution_count": 11
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"grojeta_tipo_pagamento = streaming\\\n",
+					"    .groupby('payment_lookup')\\\n",
+					"    .agg(\n",
+					"        f.sum('total_amount').alias('total_amount')\n",
+					"    )"
+				],
+				"execution_count": 29
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"grojeta_tipo_pagamento = streaming\\\n",
+					"    .groupby('name')\\\n",
+					"    .agg(\n",
+					"        f.sum('total_amount').alias('total_amount')\n",
+					"    )"
+				],
+				"execution_count": 32
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"import matplotlib.pyplot as plt"
+				],
+				"execution_count": 30
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"ActivityQuery = (\n",
+					"    grojeta_tipo_pagamento.writeStream.queryName('gorjeta')\\\n",
+					"    .format('memory')\\\n",
+					"    .outputMode('complete')\\\n",
+					"    .start()\n",
+					")\n",
+					"\n",
+					"from time import sleep\n",
+					"\n",
+					"for x in range(50):\n",
+					"    df = spark.sql(\n",
+					"        \"SELECT * FROM gorjeta\"\n",
+					"    )\n",
+					"    \n",
+					"\n",
+					"    if df.count() > 0:\n",
+					"        df = df.toPandas()\n",
+					"\n",
+					"        plt.bar(df['name'], df['total_amount'], color ='maroon', width = 0.4)\n",
+					"        plt.xlabel(\"Método de Pagamento\")\n",
+					"        plt.ylabel(\"Evolução da Gorjeta\")\n",
+					"        plt.title(\"Streaming de Gorjeta x Tipo de Pagamento\")\n",
+					"\n",
+					"        plt.show()\n",
+					"\n",
+					"    sleep(0.5)"
+				],
+				"execution_count": 34
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"ActivityQuery.stop()"
+				],
+				"execution_count": 33
+			}
+		]
+	}
+}

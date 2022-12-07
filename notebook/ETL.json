@@ -1,0 +1,481 @@
+{
+	"name": "ETL",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "guispark",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"runAsWorkspaceSystemIdentity": false,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "2b425fd3-1940-4354-b881-c9fb1738d8fa"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"synapse_widget": {
+				"version": "0.1"
+			},
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "Synapse PySpark"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/c0532d08-eeaa-491a-aec3-1e183a9b71b1/resourceGroups/GuiAzure/providers/Microsoft.Synapse/workspaces/gui-atento/bigDataPools/guispark",
+				"name": "guispark",
+				"type": "Spark",
+				"endpoint": "https://gui-atento.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/guispark",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net",
+					"authHeader": null
+				},
+				"sparkVersion": "3.2",
+				"nodeCount": 3,
+				"cores": 4,
+				"memory": 28,
+				"extraHeader": null
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"Primeira tarefa aqui foi extrair os dados que referenciavam os pagamentos..."
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"payment_lookup = spark.read.csv(\n",
+					"    'abfss://disco1@storageguidatalake.dfs.core.windows.net/data/data-payment_lookup-csv.csv',\n",
+					"    sep=',',\n",
+					"    header=True,\n",
+					"    inferSchema=True\n",
+					")\n",
+					"\n",
+					"\n",
+					""
+				],
+				"execution_count": 1
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"payment_lookup = payment_lookup.withColumnRenamed(\"A\", 'payment_type')\\\n",
+					"  .withColumnRenamed('B', 'payment_lookup')\n",
+					"\n",
+					"payment_lookup = spark.createDataFrame(payment_lookup.tail(payment_lookup.count()-1), payment_lookup.schema)\n",
+					"payment_lookup.show()\n",
+					"\n",
+					""
+				],
+				"execution_count": 2
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"Agora ficou perfeito! Mas ainda tenho que fazer o mesmo com o dataset dos fornecedores... "
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"vendor_lookup = spark.read.csv(\n",
+					"    'abfss://disco1@storageguidatalake.dfs.core.windows.net/data/data-vendor_lookup-csv.csv',\n",
+					"    sep=',',\n",
+					"    header=True\n",
+					"    \n",
+					")"
+				],
+				"execution_count": 3
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"Agora de uma só vez eu consigo ler as informações dos arquivos json e agora tenho a informação de todos os anos juntas."
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"dataset = spark.read.json(\n",
+					"    'abfss://disco1@storageguidatalake.dfs.core.windows.net/data/data-sample_data-nyctaxi-trips-20??-json_corrigido.json'\n",
+					")\n",
+					""
+				],
+				"execution_count": 4
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"dataset.count()"
+				],
+				"execution_count": 5
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					},
+					"collapsed": true
+				},
+				"source": [
+					"dataset.toPandas()"
+				],
+				"execution_count": 6
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"Estou aplicando uma operação de JOIN para unir as informações dos pagamentos e dos fornecedores em apenas um dataframe."
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"dataset = dataset\\\n",
+					"  .join(vendor_lookup.select('vendor_id','name'), 'vendor_id', how='inner')\\\n",
+					"  .join(payment_lookup, 'payment_type', how='inner')"
+				],
+				"execution_count": 7
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"from pyspark.sql.types import StringType\n",
+					"from pyspark.sql import functions as f"
+				],
+				"execution_count": 8
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"Algumas operações de transformações também serão necessárias para tratar as datas aqui ..."
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"dataset = dataset\\\n",
+					"  .select('*', f.substring('dropoff_datetime',1,10).alias('Data'))\n",
+					"\n",
+					"dataset = dataset.withColumn('Data', f.to_date(dataset.Data.cast(StringType()), 'yyyy-MM-dd'))"
+				],
+				"execution_count": 9
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"from pyspark.sql.functions import *\n",
+					"\n",
+					"dataset = dataset\\\n",
+					"            .withColumn('dropoff_datetime', regexp_replace('dropoff_datetime', 'T', ' '))\\\n",
+					"            .withColumn('pickup_datetime', regexp_replace('pickup_datetime', 'T', ' '))"
+				],
+				"execution_count": 10
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"dataset = dataset\\\n",
+					"  .select('*', f.substring('dropoff_datetime',1,19).alias('final'), f.substring('pickup_datetime',1,19).alias('inicial'))\n",
+					"\n",
+					""
+				],
+				"execution_count": 11
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"Agora eu vou converter as datas pra TIMESTAMP"
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"dataset = dataset\\\n",
+					"    .withColumn('final', f.to_timestamp(dataset.final.cast(StringType()), 'yyyy-MM-dd HH:mm:ss'))\\\n",
+					"    .withColumn('inicial', f.to_timestamp(dataset.inicial.cast(StringType()), 'yyyy-MM-dd HH:mm:ss'))  \n",
+					"\n",
+					""
+				],
+				"execution_count": 12
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"Pra ficar mais fácil de responder todas as questões também vou criar duas colunas TIMESTAMP com o início e final da viagem. depois vou fazer a subtração de uma pra outra e dividir por 60 para saber o tempo da viagem em minutos. Além disso também vou puxar uma coluna para indicar qual o dia da semana."
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"dataset = dataset\\\n",
+					"  .withColumn('tempo_viagem', f.unix_timestamp('final') - f.unix_timestamp('inicial'))\\\n",
+					"  .withColumn('tempo_viagem',round(col('tempo_viagem')/60, 2))\n",
+					"\n",
+					"dataset = dataset\\\n",
+					"  .select('*', f.dayofweek('Data').alias('dia_da_semana'))"
+				],
+				"execution_count": 13
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"dataset.toPandas()"
+				],
+				"execution_count": 15
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"Depois de todo esse tratamento tenho tudo o que preciso pra responder todas as questões. Vou salvar o dataset em um diretório no datalake da Azure."
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"dataset\\\n",
+					"  .write\\\n",
+					"  .option(\"header\", 'true')\\\n",
+					"  .mode('overwrite')\\\n",
+					"  .csv(\"abfss://disco1@storageguidatalake.dfs.core.windows.net/data/dataset.csv\")"
+				],
+				"execution_count": 16
+			}
+		]
+	}
+}
